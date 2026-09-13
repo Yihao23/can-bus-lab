@@ -166,6 +166,6 @@ what would let the same code run on a microcontroller with its own tick.
 |---|---|
 | `python -m unittest discover -s tests` | ✅ 49 passed (2026-09-13, udsoncan 1.26.1, can-isotp 2.0.7) |
 | `python -m tester --channel virtual --log …` | ✅ run; the session output and the frames above are from that run |
-| `python -m ecu` + `python -m tester` on `vcan0` | ⬜ not yet run — needs `setup/vcan-up.sh` |
-| `isotpsend` / `isotprecv` against `python -m ecu` | ⬜ not yet run — needs `can-utils` |
-| Wireshark UDS decode | ⬜ not yet run |
+| `python -m ecu` + `python -m tester` on `vcan0`, two processes | ✅ run (2026-09-13); all 14 lines identical to the virtual-bus run |
+| `echo "22 F1 90" \| isotpsend -s 7E0 -d 7E8 vcan0` + `isotprecv` against `python -m ecu` | ✅ kernel ISO-TP talking to python can-isotp: `62 F1 90 57 43 41 4E …` = the VIN |
+| Wireshark UDS decode | ⬜ not yet run (tshark not installed) |

@@ -55,10 +55,10 @@ class UdsEcuOnCan(threading.Thread):
                     self.server.tick(now)
                     continue
                 if self.verbose:
-                    print(f"ecu  <- {request.hex(' ')}")
+                    print(f"ecu  <- {request.hex(' ')}", flush=True)
                 for response in self.server.handle(bytes(request), now):
                     if self.verbose:
-                        print(f"ecu  -> {response.hex(' ')}")
+                        print(f"ecu  -> {response.hex(' ')}", flush=True)
                     self.stack.send(response)
                     if len(response) == 3 and response[2] == NRC_RESPONSE_PENDING:
                         time.sleep(0.3)   # the "slow" service doing its slow thing

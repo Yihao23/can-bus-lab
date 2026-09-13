@@ -116,7 +116,15 @@ python3 -m cananalyzer samples/faulty.log --dbc samples/lab_vehicle.dbc --format
 
 以上全部在笔记本上跑，不需要 root。要用 `candump`、Wireshark 和项目 03 的靶子，
 需要 `sudo apt install can-utils` 和 `sudo setup/vcan-up.sh` ——
-见 [TROUBLESHOOTING.md](TROUBLESHOOTING.md)。
+见 [TROUBLESHOOTING.md](TROUBLESHOOTING.md)。之后去掉 `--channel virtual`，
+这台机器上的所有进程就共享同一条总线:
+
+```bash
+python -m vehicle --duration 30 &            # 项目 01 跑在 vcan0 上
+candump -td -c vcan0                         # 旁听
+cansend vcan0 100#0000000000000000           # 伪造一帧 ENGINE_DATA —— 仪表会因 CRC 拒掉它
+echo "22 F1 90" | isotpsend -s 7E0 -d 7E8 vcan0   # 一行 Python 都不用，读项目 02 ECU 的 VIN
+```
 
 ---
 

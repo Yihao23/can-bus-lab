@@ -166,4 +166,4 @@ render.py            text | json | md (+ mermaid) | html (+ SVG bus-load plot)
 | `python3 -m unittest discover -s tests` | ✅ 40 passed (2026-09-13, Python 3.13, system interpreter, no venv) |
 | All four samples, all five formats | ✅ run; `samples/report-*.{md,html,txt}` are the outputs |
 | `samples/*.log` provenance | ✅ recorded from projects 01 and 02 on the in-process virtual bus (channel names `lab` / `uds`), not from `vcan0` |
-| A log from real `candump -L` | ⬜ not yet — needs `can-utils`; the format is identical by construction (python-can's `Logger` writes candump format) |
+| A log from real `candump -L vcan0` | ✅ `../03-bus-analysis/captures/vcan-real.log`, project 01 with `--fault drop-abs=0.05 --fault bad-crc=30`: R004 × 8, R001/R003 × 16 including the wrap-around `14 -> 1, expected 0` |

@@ -99,6 +99,6 @@ uds discovery` counts, `services` correlates, `dump_dids` hypothesises.
 | What | Status |
 |---|---|
 | `tools/idstat.py` on project 01's log | ✅ run on `04-can-log-analyzer/samples/healthy.log` |
-| `setup/capture.sh` | ⬜ not yet run — needs `can-utils` and `vcan0` |
+| `setup/capture.sh vcan-real 5` on project 01 | ✅ run (2026-09-13); `captures/vcan-real.idstat` is the output. No `.pcap` because tshark is not installed — the script says so and carries on |
 | ICSim, uds-server, caringcaribou | ⬜ not yet installed on this machine |
 | `report/REPORT-01.md` | ⬜ template only |

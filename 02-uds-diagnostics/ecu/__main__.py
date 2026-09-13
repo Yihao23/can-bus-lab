@@ -26,7 +26,7 @@ def main(argv=None):
         server.state.engine_speed_rpm = 0
     ecu = UdsEcuOnCan(bus, server, verbose=args.verbose)
     ecu.start()
-    print(f"ecu  listening on {args.channel}: rx 0x7E0 -> tx 0x7E8  (Ctrl-C to stop)")
+    print(f"ecu  listening on {args.channel}: rx 0x7E0 -> tx 0x7E8  (Ctrl-C to stop)", flush=True)
     try:
         while ecu.is_alive():
             time.sleep(0.5)

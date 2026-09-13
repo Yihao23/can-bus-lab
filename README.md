@@ -129,7 +129,15 @@ python3 -m cananalyzer samples/faulty.log --dbc samples/lab_vehicle.dbc --format
 
 Everything above runs on a laptop with no root. For `candump`, Wireshark and
 the project 03 targets you need `sudo apt install can-utils` and
-`sudo setup/vcan-up.sh` — see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+`sudo setup/vcan-up.sh` — see [TROUBLESHOOTING.md](TROUBLESHOOTING.md). Then
+drop `--channel virtual` and every process on the machine shares one bus:
+
+```bash
+python -m vehicle --duration 30 &            # project 01 on vcan0
+candump -td -c vcan0                         # watch it
+cansend vcan0 100#0000000000000000           # forge an ENGINE_DATA frame — the cluster rejects it (CRC)
+echo "22 F1 90" | isotpsend -s 7E0 -d 7E8 vcan0   # read the VIN from project 02's ECU with no Python at all
+```
 
 ---
 

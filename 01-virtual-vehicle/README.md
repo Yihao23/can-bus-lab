@@ -217,5 +217,6 @@ claim → evidence → limitation.
 | `python -m unittest discover -s tests` | ✅ 24 passed (2026-09-13, python-can 4.6.1, cantools 44.0.0) |
 | `python -m vehicle --channel virtual` healthy + all six faults | ✅ run, output above is real |
 | `--dashboard` in Chrome | ✅ run; `screenshots/dashboard.jpg` is that session at t = 51 s |
-| `python -m vehicle` on `vcan0` + `candump` | ⬜ not yet run on this machine — needs `can-utils` and `setup/vcan-up.sh` |
-| Wireshark on `vcan0` | ⬜ not yet run |
+| `python -m vehicle` on `vcan0` + `candump -td vcan0` | ✅ run (2026-09-13, can-utils 2023.03); `/proc/net/can/rcvlist_all` showed the four sockets |
+| `cansend vcan0 100#0000000000000000` while running | ✅ the cluster rejected it: `crc: 1`, `fault t=1.913s ENGINE_DATA: crc`; `cansend vcan0 555#CAFE` → `unknown ids not in DBC: 0x555` |
+| Wireshark on `vcan0` | ⬜ not yet run (tshark not installed) |
