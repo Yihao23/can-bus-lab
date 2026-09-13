@@ -39,7 +39,7 @@ candump -td -c vcan0                  # terminal 2
 python -m vehicle --channel virtual --duration 120 --dashboard --fault bad-crc=40
 # then open http://localhost:8080
 
-python -m unittest discover -s tests -v     # 29 tests, no network needed
+python -m unittest discover -s tests -v     # 31 tests, no network needed
 ```
 
 ---
@@ -224,10 +224,16 @@ reads `ok` — is a real improvement left as an exercise; call it `pending_crc`.
 让丢一帧后 `counter=2` 判 `ok`)留作练习，叫它 `pending_crc`。
 
 ### Day 4 — timeouts / 超时
-- [ ] Implement `ClusterEcu.check_timeouts()`. Write a test that uses
-  `Faults(engine_stop_after=0.2)`.
-- [ ] Answer: when `ABS_DATA` times out, should the speedometer hold the last
-  value or drop to zero? Answer: ______________________
+- [x] Implement `ClusterEcu.check_timeouts()`, with a test using
+  `Faults(engine_stop_after=0.2)`. Detection and the report-once logic are in:
+  a message silent for more than 3× its cycle is recorded once, cleared to
+  report again when it comes back. `--fault engine-stop=2` now prints
+  `timeout t=2.064s ENGINE_DATA stopped arriving`.
+- [ ] **Still yours — the gauge decision.** When a message times out, what
+  should its gauge show? The default holds the last value; the commented block
+  in `check_timeouts()` zeroes it. Neither is obviously safe: a held speed
+  looks like nothing changed, a zeroed speed looks like the car stopped. Pick
+  one and write why here: ______________________
 - [ ] Add a J1939-style 29-bit message to the DBC (PGN 0xFEF1 CCVS, wheel-based
   speed) and a fourth sender for it. `busload.frame_bits(extended=True)` is
   already waiting.
@@ -240,7 +246,7 @@ reads `ok` — is a real improvement left as an exercise; call it `pending_crc`.
 
 | What | Status |
 |---|---|
-| `python -m unittest discover -s tests` | ✅ 29 passed (2026-09-13, python-can 4.6.1, cantools 44.0.0) — includes the day-3 receiver check and its 5 tests |
+| `python -m unittest discover -s tests` | ✅ 31 passed (2026-09-13, python-can 4.6.1, cantools 44.0.0) — includes the day-3 receiver check and the day-4 timeout detection |
 | `python -m vehicle --channel virtual` healthy + all six faults | ✅ run, output above is real |
 | `--dashboard` in Chrome | ✅ run; `screenshots/dashboard.jpg` is that session at t = 51 s |
 | `python -m vehicle` on `vcan0` + `candump -td vcan0` | ✅ run (2026-09-13, can-utils 2023.03); `/proc/net/can/rcvlist_all` showed the four sockets |

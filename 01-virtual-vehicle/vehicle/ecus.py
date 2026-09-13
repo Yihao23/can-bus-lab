@@ -201,6 +201,7 @@ class ClusterEcu(can.Listener):
         self.receivers = {m.frame_id: e2e.E2EReceiver(data_id_of(m))
                           for m in db.messages if "E2EDataId" in m.dbc.attributes}
         self.last_seen: dict[int, float] = {}
+        self._timed_out: set[int] = set()   # ids already reported as timed out; cleared when they come back
         self._next_print = t0 + print_every
 
     def on_message_received(self, msg: can.Message):
@@ -212,6 +213,7 @@ class ClusterEcu(can.Listener):
             self.state.unknown_ids.add(msg.arbitration_id)
             return
         self.last_seen[msg.arbitration_id] = t
+        self._timed_out.discard(msg.arbitration_id)   # it is back; let it report a timeout again if it stops later
         if len(msg.data) != dbc_msg.length:
             self.state.e2e_events.append((t, dbc_msg.name, f"dlc {len(msg.data)} != {dbc_msg.length}"))
             self.state.last_verdict[dbc_msg.name] = "dlc"
@@ -238,14 +240,29 @@ class ClusterEcu(can.Listener):
         """Called from the main loop, not from on_message_received — a message
         that stopped arriving will never trigger a receive callback.
         从主循环调用，而不是收包回调: 不再到达的报文永远不会触发回调。"""
-        # TODO(you) — project 01, day 4
-        # For every cyclic message in self.receivers: if it has been seen and
-        # t - last_seen > 3 * cycle_time, append (t, name) to state.timeouts
-        # once (not every call), and clear the gauge value it feeds. Then decide:
-        # should the cluster show the *last* speed or *zero* when ABS_DATA
-        # times out? Write your answer in the README; there is a right one.
-        # 超时后仪表该显示"最后一次车速"还是"零"? 把答案写进 README，这题有正解。
-        pass
+        for frame_id in self.receivers:
+            last = self.last_seen.get(frame_id)
+            if last is None:
+                continue   # never arrived at all -> not "stopped", just not started
+            dbc_msg = self.db.get_message_by_frame_id(frame_id)
+            deadline = 3 * dbc_msg.cycle_time / 1000.0   # cycle_time is ms; last/t are seconds
+            if t - last > deadline and frame_id not in self._timed_out:
+                self._timed_out.add(frame_id)            # remember it, so this timeout is recorded once
+                self.state.timeouts.append((t, dbc_msg.name))
+                # TODO(you) — project 01, day 4. The decision the project asks
+                # you to make: when a message times out, what should its gauge
+                # show? Doing nothing (below) HOLDS the last value. Zeroing it
+                # snaps the needle to 0. Neither is obviously safe — a held
+                # speed looks like nothing changed, a zeroed speed looks like
+                # the car stopped. Pick one, uncomment it, and write your
+                # reasoning in the README.
+                # 超时后仪表显示什么? 什么都不做=保持最后值；清零=指针归零。两者都不明显安全。
+                # 选一个，取消注释，把理由写进 README。
+                #
+                # if dbc_msg.name == "ENGINE_DATA":
+                #     self.state.engine_rpm = 0.0
+                # elif dbc_msg.name == "ABS_DATA":
+                #     self.state.speed_kmh = 0.0
 
     def _maybe_print(self, t: float):
         now = time.monotonic()

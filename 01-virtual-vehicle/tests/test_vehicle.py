@@ -21,7 +21,13 @@ def run_vehicle(faults: Faults, seconds: float = 0.6):
     notifier = can.Notifier(buses[3], [cluster])
     for s in senders:
         s.start()
-    time.sleep(seconds)
+    # Drive check_timeouts from here the way __main__'s main loop does — a
+    # timeout can never be detected inside a receive callback, so something
+    # outside the callback has to poll for it.
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        time.sleep(0.02)
+        cluster.check_timeouts(time.monotonic() - t0)
     stop.set()
     for s in senders:
         s.join(1)
@@ -60,6 +66,21 @@ class VehicleTest(unittest.TestCase):
         _, cluster = run_vehicle(Faults(wrong_dlc=True))
         self.assertTrue(any(name == "BODY_STATUS" and v.startswith("dlc") for _, name, v in cluster.state.e2e_events))
         self.assertEqual(cluster.state.turn, "Off")   # never decoded a BODY_STATUS
+
+    def test_stopped_message_times_out_exactly_once(self):
+        # Engine goes silent at 0.2 s. Its cycle is 20 ms, so 3x = 60 ms later
+        # the cluster should notice — once, not on every poll thereafter.
+        _, cluster = run_vehicle(Faults(engine_stop_after=0.2), seconds=0.8)
+        engine = [(t, name) for t, name in cluster.state.timeouts if name == "ENGINE_DATA"]
+        self.assertEqual(len(engine), 1, "a single stop must produce a single timeout")
+        self.assertGreater(engine[0][0], 0.2)   # reported after the stop, not before
+        # ABS and BCM kept sending, so they must not be reported as timed out
+        others = {name for _, name in cluster.state.timeouts}
+        self.assertEqual(others, {"ENGINE_DATA"})
+
+    def test_healthy_bus_never_times_out(self):
+        _, cluster = run_vehicle(Faults(), seconds=0.6)
+        self.assertEqual(cluster.state.timeouts, [])
 
 
 if __name__ == "__main__":

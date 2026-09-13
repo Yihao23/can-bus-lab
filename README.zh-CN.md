@@ -184,7 +184,7 @@ echo "22 F1 90" | isotpsend -s 7E0 -d 7E8 vcan0   # 一行 Python 都不用，�
 
 ```bash
 source .venv/bin/activate
-(cd 01-virtual-vehicle  && python  -m unittest discover -s tests)   # 29 passed
+(cd 01-virtual-vehicle  && python  -m unittest discover -s tests)   # 31 passed
 (cd 02-uds-diagnostics  && python  -m unittest discover -s tests)   # 49 passed
 (cd 04-can-log-analyzer && python3 -m unittest discover -s tests)   # 40 passed，不需要 venv
 ```
