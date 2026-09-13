@@ -65,7 +65,7 @@ and what hardware you would need to.
 
 | # | Project | What it proves | Status |
 |---|---|---|---|
-| **01** | [Virtual vehicle: three ECUs on a bus](01-virtual-vehicle/) | You can write a DBC, encode Motorola by hand, compute bus load, protect a frame with E2E | ✅ 24 tests, six injectable faults, live dashboard |
+| **01** | [Virtual vehicle: three ECUs on a bus](01-virtual-vehicle/) | You can write a DBC, encode Motorola by hand, compute bus load, protect a frame with E2E | ✅ 29 tests, six injectable faults, live dashboard |
 | **02** | [UDS diagnostics: sessions, security, DIDs, DTCs](02-uds-diagnostics/) | You can implement a protocol from the side that enforces the rules | ✅ 49 tests, real ISO-TP end to end |
 | **03** | [Bus analysis: ICSim and uds-server, blind](03-bus-analysis/) | You can read a bus you had never seen | ⬜ template + tools; the report is yours to write |
 | **04** | [CAN log analyzer](04-can-log-analyzer/) | You can diagnose, which is the actual daily job | ✅ 40 tests, 10 rules, HTML reports |
@@ -201,7 +201,7 @@ counter check is a `TODO(you)`, and this column is how you will know it works.
 
 ```bash
 source .venv/bin/activate
-(cd 01-virtual-vehicle  && python  -m unittest discover -s tests)   # 24 passed
+(cd 01-virtual-vehicle  && python  -m unittest discover -s tests)   # 29 passed
 (cd 02-uds-diagnostics  && python  -m unittest discover -s tests)   # 49 passed
 (cd 04-can-log-analyzer && python3 -m unittest discover -s tests)   # 40 passed, no venv needed
 ```

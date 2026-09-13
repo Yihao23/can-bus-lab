@@ -56,29 +56,29 @@ class ReceiverTest(unittest.TestCase):
     # E2EReceiver.check in vehicle/e2e.py.
     # 取消注释，看着它们失败，再去实现 E2EReceiver.check。
     #
-    # def test_first_frame_is_initial(self):
-    #     rx = e2e.E2EReceiver(17)
-    #     self.assertEqual(rx.check(self.frames([4])[0]), "initial")
-    #
-    # def test_consecutive_is_ok_including_wrap(self):
-    #     rx = e2e.E2EReceiver(17)
-    #     verdicts = [rx.check(f) for f in self.frames([13, 14, 0, 1])]
-    #     self.assertEqual(verdicts, ["initial", "ok", "ok", "ok"])
-    #
-    # def test_repeated_counter(self):
-    #     rx = e2e.E2EReceiver(17)
-    #     verdicts = [rx.check(f) for f in self.frames([5, 5])]
-    #     self.assertEqual(verdicts[-1], "repeated")
-    #
-    # def test_small_gap_is_lost_large_gap_is_wrong_seq(self):
-    #     rx = e2e.E2EReceiver(17)
-    #     self.assertEqual([rx.check(f) for f in self.frames([2, 4])][-1], "lost")
-    #     rx = e2e.E2EReceiver(17)
-    #     self.assertEqual([rx.check(f) for f in self.frames([2, 9])][-1], "wrong_seq")
-    #
-    # def test_backwards_is_wrong_seq(self):
-    #     rx = e2e.E2EReceiver(17)
-    #     self.assertEqual([rx.check(f) for f in self.frames([6, 5])][-1], "wrong_seq")
+    def test_first_frame_is_initial(self):
+        rx = e2e.E2EReceiver(17)
+        self.assertEqual(rx.check(self.frames([4])[0]), "initial")
+    
+    def test_consecutive_is_ok_including_wrap(self):
+        rx = e2e.E2EReceiver(17)
+        verdicts = [rx.check(f) for f in self.frames([13, 14, 0, 1])]
+        self.assertEqual(verdicts, ["initial", "ok", "ok", "ok"])
+    
+    def test_repeated_counter(self):
+        rx = e2e.E2EReceiver(17)
+        verdicts = [rx.check(f) for f in self.frames([5, 5])]
+        self.assertEqual(verdicts[-1], "repeated")
+    
+    def test_small_gap_is_lost_large_gap_is_wrong_seq(self):
+        rx = e2e.E2EReceiver(17)
+        self.assertEqual([rx.check(f) for f in self.frames([2, 4])][-1], "lost")
+        rx = e2e.E2EReceiver(17)
+        self.assertEqual([rx.check(f) for f in self.frames([2, 9])][-1], "wrong_seq")
+    
+    def test_backwards_is_wrong_seq(self):
+        rx = e2e.E2EReceiver(17)
+        self.assertEqual([rx.check(f) for f in self.frames([6, 5])][-1], "wrong_seq")
 
 
 if __name__ == "__main__":

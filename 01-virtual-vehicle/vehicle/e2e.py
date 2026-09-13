@@ -47,6 +47,7 @@ def crc8_j1850(data: bytes, init: int = 0xFF) -> int:
 COUNTER_BYTE = 6
 CRC_BYTE = 7
 COUNTER_MAX = 14  # 0..14 inclusive; 15 is reserved, same as Profile 1
+MAX_DELTA_COUNTER = 3  # tolerate up to 2 lost frames as "lost"; more is "wrong_seq". See README.
 
 
 def protect(payload: bytearray, data_id: int, counter: int) -> bytearray:
@@ -111,6 +112,19 @@ class E2EReceiver:
         # Wrap-around 14 -> 0 must be "ok". Write the tests in
         # tests/test_e2e.py first; there is a commented block waiting for you.
         # 先写测试再写实现。14 -> 0 的回绕必须判为 "ok"。
+        # Decide the verdict, then update counter and stats in one place so no
+        # branch can forget either. "repeated" leaves last_counter unchanged in
+        # value anyway (counter == last_counter), so a single assignment is safe.
+        if self.last_counter is None:
+            verdict = "initial"
+        elif counter == self.last_counter:
+            verdict = "repeated"
+        elif counter == next_counter(self.last_counter):
+            verdict = "ok"
+        elif (counter - self.last_counter) % (COUNTER_MAX + 1) <= MAX_DELTA_COUNTER:
+            verdict = "lost"
+        else:
+            verdict = "wrong_seq"
         self.last_counter = counter
-        self.stats["ok"] += 1
-        return "ok"
+        self.stats[verdict] += 1
+        return verdict

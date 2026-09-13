@@ -39,7 +39,7 @@ candump -td -c vcan0                  # terminal 2
 python -m vehicle --channel virtual --duration 120 --dashboard --fault bad-crc=40
 # then open http://localhost:8080
 
-python -m unittest discover -s tests -v     # 24 tests, no network needed
+python -m unittest discover -s tests -v     # 29 tests, no network needed
 ```
 
 ---
@@ -92,12 +92,14 @@ Two things to notice, and to be able to explain:
    from decision 3 below.
    `ENGINE_DATA` 显示 `crc`、拒了 64 帧，但指针照常走: 仪表丢掉坏帧、保留上一个好值，
    20 ms 后的下一帧更新它。
-2. **`ABS_DATA` shows `lost = 0` although 3 % of its frames were dropped.**
-   The receiver-side counter check is your day-3 `TODO(you)`; until you write
-   it, every frame with a valid CRC is `ok`. When the column starts counting,
-   you know your implementation works — the dashboard is the test you can see.
-   `ABS_DATA` 丢了 3% 的帧却显示 `lost = 0`: 接收端计数器检查是你第 3 天的 TODO。
-   那一列开始计数的时候，就是你的实现生效的时候。
+2. **`ABS_DATA` shows `lost = 0` in this screenshot although 3 % of its frames
+   were dropped.** The image was captured before the day-3 counter check was
+   written: with the placeholder `check()`, every frame with a valid CRC counted
+   as `ok`. The check is now implemented, so `--fault drop-abs` makes the `lost`
+   column climb — re-run with `--dashboard` and watch it. The dashboard is the
+   test you can see.
+   截图里 `ABS_DATA` 丢了 3% 的帧却显示 `lost = 0`: 那是第 3 天计数器检查写好之前截的。
+   现在检查已实现，`--fault drop-abs` 会让 `lost` 列往上涨，重跑 `--dashboard` 就能看到。
 
 The `Age` column turns red past 3 × cycle time, and `TIMEOUT` appears next
 to it once `check_timeouts()` (day 4) reports one. Try `--fault engine-stop=5`
@@ -190,12 +192,36 @@ claim → evidence → limitation.
   why the start bit in the DBC (15) is the MSB and not the LSB.
 - [ ] `cantools decode dbc/lab_vehicle.dbc < your.log` — check your arithmetic.
 
-### Day 3 — E2E receiver check / E2E 接收端检查
-- [ ] Uncomment the five tests in `tests/test_e2e.py`. Run them. They fail.
-- [ ] Implement `E2EReceiver.check()` in `vehicle/e2e.py`. Pick `MaxDeltaCounter`
-  and write here why: ______________________
-- [ ] `--fault stuck-counter` now reports `repeated`; `--fault drop-abs=0.2`
+### Day 3 — E2E receiver check / E2E 接收端检查  ✅ done
+- [x] Uncomment the five tests in `tests/test_e2e.py`. Run them. They fail.
+- [x] Implement `E2EReceiver.check()` in `vehicle/e2e.py`.
+- [x] `--fault stuck-counter` now reports `repeated`; `--fault drop-abs=0.2`
   reports `lost`.
+
+**`MaxDeltaCounter = 3`, and why not 1 or 14.** A real bus loses the odd frame
+to a busy moment or a marginal connector; tolerating a gap of 1–2 (delta 2–3)
+as `lost` — a warning, not an error — keeps those from crying wolf. But a big
+jump is not "a few frames dropped", it is a node that reset, a replay, or a
+scrambled counter, so past the threshold it becomes `wrong_seq` (error). 1
+would flag every normal hiccup; 14 would call a total dropout "just some loss".
+真实总线偶尔掉一两帧很正常，容忍 delta 2–3 判 `lost`(警告)不误报；跳得多则是重启/重放/
+乱序，超阈值判 `wrong_seq`(错误)。取 1 会把正常抖动全报，取 14 会把彻底掉线当成小丢帧。
+
+**A CRC error and a lost frame were being counted twice — the design call.**
+A CRC-rejected frame is dropped before its counter is read, so it does not
+advance `last_counter`; the next good frame then looks like it skipped a count
+and reads as `lost`, on top of the `crc` already reported. With
+`--fault bad-crc=2` (every other frame bad) *every* good frame lands on that
+gap, so `ok` never happens. Decision: keep it simple — the test uses
+`bad-crc=3` so two good frames still arrive back to back and produce `ok`, and
+`lost` after a corrupted frame is accepted as "one frame's data did not make
+it, however it failed". The stricter alternative — track how many CRC-rejects
+sat between two good frames and subtract them, so `counter=2` after one drop
+reads `ok` — is a real improvement left as an exercise; call it `pending_crc`.
+坏 CRC 的帧在读 counter 前就被丢，不推进 `last_counter`，下一个好帧看着像跳号被判 `lost`,
+和已报的 `crc` 重复计一次。`bad-crc=2` 时每个好帧都落在缺口上，永远出不了 `ok`。决定: 从简,
+测试用 `bad-crc=3`，接受"坏帧后判 lost"。更严谨的做法(数两个好帧间有几个坏帧再减掉，
+让丢一帧后 `counter=2` 判 `ok`)留作练习，叫它 `pending_crc`。
 
 ### Day 4 — timeouts / 超时
 - [ ] Implement `ClusterEcu.check_timeouts()`. Write a test that uses
@@ -214,7 +240,7 @@ claim → evidence → limitation.
 
 | What | Status |
 |---|---|
-| `python -m unittest discover -s tests` | ✅ 24 passed (2026-09-13, python-can 4.6.1, cantools 44.0.0) |
+| `python -m unittest discover -s tests` | ✅ 29 passed (2026-09-13, python-can 4.6.1, cantools 44.0.0) — includes the day-3 receiver check and its 5 tests |
 | `python -m vehicle --channel virtual` healthy + all six faults | ✅ run, output above is real |
 | `--dashboard` in Chrome | ✅ run; `screenshots/dashboard.jpg` is that session at t = 51 s |
 | `python -m vehicle` on `vcan0` + `candump -td vcan0` | ✅ run (2026-09-13, can-utils 2023.03); `/proc/net/can/rcvlist_all` showed the four sockets |

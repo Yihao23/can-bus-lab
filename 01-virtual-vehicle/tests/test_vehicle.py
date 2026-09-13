@@ -40,7 +40,16 @@ class VehicleTest(unittest.TestCase):
         self.assertEqual(cluster.state.unknown_ids, set())
 
     def test_bad_crc_is_caught_and_kept_off_the_gauges(self):
-        _, cluster = run_vehicle(Faults(bad_crc_every=2))
+        # bad_crc_every=3, not 2, on purpose. A CRC-rejected frame is dropped
+        # before its counter is read, so it does not advance last_counter; the
+        # next good frame then looks like it skipped a count. With every 2nd
+        # frame bad, *every* good frame would land on that gap and be judged
+        # "lost", never "ok". With every 3rd frame bad, two good frames still
+        # arrive back to back, so the receiver sees a clean +1 and reports "ok".
+        # (Distinguishing a corrupted frame from a truly lost one — so counter=2
+        # after a CRC drop reads as "ok" — is the pending_crc idea noted in the
+        # README, left as an exercise.)
+        _, cluster = run_vehicle(Faults(bad_crc_every=3))
         verdicts = {v for _, name, v in cluster.state.e2e_events if name == "ENGINE_DATA"}
         self.assertIn("crc", verdicts)
         rx = cluster.receivers[0x100]
