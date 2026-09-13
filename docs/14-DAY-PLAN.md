@@ -23,7 +23,8 @@ only reading produces nothing you can show.
 
 ### Day 2 · Project 01 end to end / 项目 01 跑通
 
-- [ ] `python -m vehicle` on vcan0, `candump -td -c vcan0` alongside.
+- [ ] `python -m vehicle --dashboard` on vcan0, `candump -td -c vcan0` alongside,
+  the cluster page open in a browser. Match one frame on the page to the DBC.
 - [ ] Decode one `100#` and one `300#` frame by hand. `cantools decode` to check.
 - [ ] Wireshark on vcan0: filter `can.id == 0x1A0`, add `can.data` column.
 

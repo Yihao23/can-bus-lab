@@ -60,7 +60,7 @@ graph LR
 
 | # | 项目 | 证明什么 | 状态 |
 |---|---|---|---|
-| **01** | [虚拟整车: 总线上的三个 ECU](01-virtual-vehicle/) | 会写 DBC、会手算 Motorola 字节序、会算总线负载、会用 E2E 保护帧 | ✅ 20 个测试，六种可注入故障 |
+| **01** | [虚拟整车: 总线上的三个 ECU](01-virtual-vehicle/) | 会写 DBC、会手算 Motorola 字节序、会算总线负载、会用 E2E 保护帧 | ✅ 24 个测试，六种可注入故障，实时仪表页 |
 | **02** | [UDS 诊断: 会话、安全、DID、DTC](02-uds-diagnostics/) | 能从"执行规则"的一侧实现协议 | ✅ 49 个测试，真实 ISO-TP 端到端 |
 | **03** | [总线分析: 盲做 ICSim 和 uds-server](03-bus-analysis/) | 能读一条从没见过的总线 | ⬜ 模板 + 工具；报告要你自己写 |
 | **04** | [CAN 日志分析器](04-can-log-analyzer/) | 会诊断 —— 这才是每天真正的工作 | ✅ 40 个测试，10 条规则，HTML 报告 |
@@ -146,6 +146,14 @@ python3 -m cananalyzer samples/faulty.log --dbc samples/lab_vehicle.dbc --format
 
 ---
 
+## 截图
+
+![项目 01 的实时仪表，正在拒绝 CRC 错误帧](01-virtual-vehicle/screenshots/dashboard.jpg)
+
+项目 01 在浏览器里的仪表，只用标准库。左边是仪表解码出来的，右边是线上实际有的。
+`ENGINE_DATA` 每 40 帧拒一次坏 CRC，指针纹丝不动；`ABS_DATA` 丢了 3% 的帧而 `lost` 列是 0 ——
+因为计数器检查是 `TODO(you)`，这一列就是你判断自己实现是否生效的地方。
+
 ## 用到的开源项目
 
 | 项目 | 在这里的角色 |
@@ -168,7 +176,7 @@ python3 -m cananalyzer samples/faulty.log --dbc samples/lab_vehicle.dbc --format
 
 ```bash
 source .venv/bin/activate
-(cd 01-virtual-vehicle  && python  -m unittest discover -s tests)   # 20 passed
+(cd 01-virtual-vehicle  && python  -m unittest discover -s tests)   # 24 passed
 (cd 02-uds-diagnostics  && python  -m unittest discover -s tests)   # 49 passed
 (cd 04-can-log-analyzer && python3 -m unittest discover -s tests)   # 40 passed，不需要 venv
 ```

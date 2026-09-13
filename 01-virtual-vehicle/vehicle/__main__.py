@@ -14,7 +14,7 @@ import time
 
 import can
 
-from . import busload
+from . import busload, dashboard
 from .ecus import AbsEcu, BcmEcu, ClusterEcu, EngineEcu, Faults, load_db
 
 
@@ -52,6 +52,8 @@ def main(argv=None):
     p.add_argument("--duration", type=float, default=10.0)
     p.add_argument("--bitrate", type=int, default=500_000, help="only used for the bus-load estimate")
     p.add_argument("--log", help="write a candump-format log (.log) of everything on the bus")
+    p.add_argument("--dashboard", nargs="?", const=8080, type=int, metavar="PORT",
+                   help="serve a live instrument cluster at http://localhost:PORT (default 8080)")
     p.add_argument("--fault", action="append", default=[], metavar="NAME[=VALUE]",
                    help="stuck-counter | bad-crc[=N] | engine-stop[=SEC] | jitter[=MS] | drop-abs[=FRACTION] | wrong-dlc")
     args = p.parse_args(argv)
@@ -72,6 +74,11 @@ def main(argv=None):
     listeners: list[can.Listener] = [cluster]
     if args.log:
         listeners.append(can.Logger(args.log))
+    if args.dashboard is not None:
+        dash = dashboard.DashboardListener(t0, args.bitrate)
+        listeners.append(dash)
+        server = dashboard.serve(lambda: dashboard.snapshot(cluster, dash, senders), args.dashboard)
+        print(f"dash     open http://localhost:{server.server_port}/  (Ctrl-C stops the vehicle)")
     notifier = can.Notifier(buses[3], listeners)
 
     for s in senders:

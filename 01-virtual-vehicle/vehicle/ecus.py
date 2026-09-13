@@ -178,6 +178,8 @@ class ClusterState:
     speed_kmh: float = 0.0
     turn: str = "Off"
     frames: int = 0
+    decoded: dict = field(default_factory=dict)       # message name -> last good decode
+    last_verdict: dict = field(default_factory=dict)  # message name -> last E2E verdict / dlc error
     unknown_ids: set = field(default_factory=set)
     e2e_events: list = field(default_factory=list)   # (t, message, verdict)
     timeouts: list = field(default_factory=list)     # (t, message)
@@ -212,14 +214,18 @@ class ClusterEcu(can.Listener):
         self.last_seen[msg.arbitration_id] = t
         if len(msg.data) != dbc_msg.length:
             self.state.e2e_events.append((t, dbc_msg.name, f"dlc {len(msg.data)} != {dbc_msg.length}"))
+            self.state.last_verdict[dbc_msg.name] = "dlc"
             return
         rx = self.receivers.get(msg.arbitration_id)
         if rx is not None:
             verdict = rx.check(bytes(msg.data))
+            self.state.last_verdict[dbc_msg.name] = verdict
             if verdict not in ("ok", "initial"):
                 self.state.e2e_events.append((t, dbc_msg.name, verdict))
                 return  # a frame that failed E2E must not reach the gauges
         decoded = self.db.decode_message(msg.arbitration_id, msg.data)
+        self.state.decoded[dbc_msg.name] = {k: (str(v) if not isinstance(v, (int, float)) else v)
+                                            for k, v in decoded.items()}
         if dbc_msg.name == "ENGINE_DATA":
             self.state.engine_rpm = decoded["EngineSpeed"]
         elif dbc_msg.name == "ABS_DATA":

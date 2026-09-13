@@ -34,7 +34,12 @@ sudo ../setup/vcan-up.sh
 python -m vehicle --duration 30 &
 candump -td -c vcan0                  # terminal 2
 
-python -m unittest discover -s tests -v     # 20 tests, no network needed
+# the same, with a live instrument cluster in the browser
+# 同上，外加浏览器里的实时仪表
+python -m vehicle --channel virtual --duration 120 --dashboard --fault bad-crc=40
+# then open http://localhost:8080
+
+python -m unittest discover -s tests -v     # 24 tests, no network needed
 ```
 
 ---
@@ -62,6 +67,43 @@ And in `candump` — this is what the DBC turns into on the wire:
 byte first. Byte 6 low nibble is the alive counter, byte 7 the CRC.
 `24 12` 就是 `EngineSpeed` = 0x1224 × 0.25 = 1161 rpm，Intel 字节序，低字节在前。
 第 6 字节低半字节是计数器，第 7 字节是 CRC。
+
+---
+
+## The dashboard / 仪表页
+
+![Live cluster with a CRC fault being rejected](screenshots/dashboard.jpg)
+
+`--dashboard` serves this at `localhost:8080`. Left: what the cluster
+*decoded* — needles, indicators, doors, the Motorola `OutsideTemp`. Right:
+what is *on the wire* — bus load, per-message age and E2E verdict with
+counters, and the last 24 frames candump-style. Standard library only:
+`http.server` plus a Server-Sent Events stream, no framework.
+左边是仪表**解码出来**的东西，右边是**线上**实际有的东西。只用标准库:
+`http.server` 加一条 SSE 流，没有框架。
+
+The screenshot above was taken with `--fault bad-crc=40 --fault drop-abs=0.03`.
+Two things to notice, and to be able to explain:
+截图开着 `--fault bad-crc=40 --fault drop-abs=0.03`。两件要能解释的事:
+
+1. **`ENGINE_DATA` shows `crc` with 64 rejected, yet the needle keeps
+   moving.** The cluster drops the bad frame and keeps the last good value; the
+   next good frame 20 ms later updates it. That is the "fail-safe" behaviour
+   from decision 3 below.
+   `ENGINE_DATA` 显示 `crc`、拒了 64 帧，但指针照常走: 仪表丢掉坏帧、保留上一个好值，
+   20 ms 后的下一帧更新它。
+2. **`ABS_DATA` shows `lost = 0` although 3 % of its frames were dropped.**
+   The receiver-side counter check is your day-3 `TODO(you)`; until you write
+   it, every frame with a valid CRC is `ok`. When the column starts counting,
+   you know your implementation works — the dashboard is the test you can see.
+   `ABS_DATA` 丢了 3% 的帧却显示 `lost = 0`: 接收端计数器检查是你第 3 天的 TODO。
+   那一列开始计数的时候，就是你的实现生效的时候。
+
+The `Age` column turns red past 3 × cycle time, and `TIMEOUT` appears next
+to it once `check_timeouts()` (day 4) reports one. Try `--fault engine-stop=5`
+and watch the rpm needle: does it hold or drop? Which is right?
+`Age` 列超过 3 倍周期变红；`check_timeouts()` 实现后会出现 `TIMEOUT`。
+试 `--fault engine-stop=5` 看转速指针: 是停住还是归零? 哪个才对?
 
 ---
 
@@ -101,6 +143,7 @@ vehicle/ecus.py          EngineEcu ─┐
                          BcmEcu    ─┘       │                                    │
 vehicle/e2e.py           protect() ─────────┘                                    └── E2EReceiver.check()
 vehicle/busload.py       frame_bits(), bus_load()  — the arithmetic, not a simulation
+vehicle/dashboard.py     DashboardListener (frame tail + live load) ─► snapshot() ─► /events (SSE) ─► browser
 ```
 
 **Three design decisions to defend in the interview / 面试里要能辩护的三个决策:**
@@ -171,7 +214,8 @@ claim → evidence → limitation.
 
 | What | Status |
 |---|---|
-| `python -m unittest discover -s tests` | ✅ 20 passed (2026-09-13, python-can 4.6.1, cantools 44.0.0) |
+| `python -m unittest discover -s tests` | ✅ 24 passed (2026-09-13, python-can 4.6.1, cantools 44.0.0) |
 | `python -m vehicle --channel virtual` healthy + all six faults | ✅ run, output above is real |
+| `--dashboard` in Chrome | ✅ run; `screenshots/dashboard.jpg` is that session at t = 51 s |
 | `python -m vehicle` on `vcan0` + `candump` | ⬜ not yet run on this machine — needs `can-utils` and `setup/vcan-up.sh` |
 | Wireshark on `vcan0` | ⬜ not yet run |
