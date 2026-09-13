@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Captures: commit only what you deliberately want to show.
+# 抓包只提交你有意展示的那些。
+03-bus-analysis/captures/*
+!03-bus-analysis/captures/.gitkeep
+!03-bus-analysis/captures/*.md
+!03-bus-analysis/captures/*.idstat
+*.pcap
+*.pcapng
+
+# Generated reports (regenerate with project 04)
+report.md
+report.html
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Personal working notes — local only, not part of the project.
+# 个人工作笔记，仅本地保留，不属于项目内容。
+AGENTS.md
+docs/INTERVIEW-QA.md

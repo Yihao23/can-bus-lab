@@ -1,0 +1,94 @@
+VERSION "can-bus-lab 01 virtual vehicle"
+
+
+NS_ :
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: ENGINE ABS BCM CLUSTER TESTER
+
+
+BO_ 256 ENGINE_DATA: 8 ENGINE
+ SG_ EngineSpeed : 0|16@1+ (0.25,0) [0|16383.75] "rpm" CLUSTER
+ SG_ ThrottlePos : 16|8@1+ (0.4,0) [0|100] "%" CLUSTER
+ SG_ CoolantTemp : 24|8@1+ (1,-40) [-40|215] "degC" CLUSTER
+ SG_ EngineRunning : 32|1@1+ (1,0) [0|1] "" CLUSTER
+ SG_ ENGINE_DATA_Counter : 48|4@1+ (1,0) [0|15] "" CLUSTER
+ SG_ ENGINE_DATA_CRC : 56|8@1+ (1,0) [0|255] "" CLUSTER
+
+BO_ 416 ABS_DATA: 8 ABS
+ SG_ VehicleSpeed : 0|16@1+ (0.01,0) [0|655.35] "km/h" CLUSTER,BCM
+ SG_ WheelSpeedFL : 16|12@1+ (0.1,0) [0|409.5] "km/h" CLUSTER
+ SG_ WheelSpeedFR : 28|12@1+ (0.1,0) [0|409.5] "km/h" CLUSTER
+ SG_ BrakeActive : 40|1@1+ (1,0) [0|1] "" CLUSTER,BCM
+ SG_ ABS_DATA_Counter : 48|4@1+ (1,0) [0|15] "" CLUSTER
+ SG_ ABS_DATA_CRC : 56|8@1+ (1,0) [0|255] "" CLUSTER
+
+BO_ 768 BODY_STATUS: 8 BCM
+ SG_ DoorFL : 7|1@0+ (1,0) [0|1] "" CLUSTER
+ SG_ DoorFR : 6|1@0+ (1,0) [0|1] "" CLUSTER
+ SG_ DoorRL : 5|1@0+ (1,0) [0|1] "" CLUSTER
+ SG_ DoorRR : 4|1@0+ (1,0) [0|1] "" CLUSTER
+ SG_ TurnIndicator : 3|2@0+ (1,0) [0|3] "" CLUSTER
+ SG_ LowBeam : 1|1@0+ (1,0) [0|1] "" CLUSTER
+ SG_ OutsideTemp : 15|8@0- (0.5,0) [-64|63.5] "degC" CLUSTER
+ SG_ BODY_STATUS_Counter : 51|4@0+ (1,0) [0|15] "" CLUSTER
+ SG_ BODY_STATUS_CRC : 63|8@0+ (1,0) [0|255] "" CLUSTER
+
+BO_ 2016 UDS_REQ_ENGINE: 8 TESTER
+ SG_ IsoTpPayload : 0|64@1+ (1,0) [0|0] "" ENGINE
+
+BO_ 2024 UDS_RESP_ENGINE: 8 ENGINE
+ SG_ IsoTpPayload : 0|64@1+ (1,0) [0|0] "" TESTER
+
+
+
+CM_ BO_ 256 "Engine ECU broadcast. Intel byte order. Protected by a 4-bit alive counter and CRC-8 (SAE J1850) over DataID+bytes 0..6.";
+CM_ BO_ 416 "ABS ECU broadcast. Same E2E protection as ENGINE_DATA.";
+CM_ BO_ 768 "Body control. Deliberately Motorola (big-endian) byte order so that the start-bit convention has to be understood, not guessed.";
+CM_ SG_ 768 TurnIndicator "0 off, 1 left, 2 right, 3 hazard";
+CM_ BO_ 2016 "UDS request, physical addressing, ISO-TP normal 11-bit.";
+CM_ BO_ 2024 "UDS response from the engine ECU.";
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 10000;
+BA_DEF_ BO_  "GenMsgSendType" STRING ;
+BA_DEF_ BO_  "E2EDataId" INT 0 255;
+BA_DEF_DEF_  "GenMsgCycleTime" 0;
+BA_DEF_DEF_  "GenMsgSendType" "cyclic";
+BA_DEF_DEF_  "E2EDataId" 0;
+BA_ "GenMsgCycleTime" BO_ 256 20;
+BA_ "E2EDataId" BO_ 256 17;
+BA_ "GenMsgCycleTime" BO_ 416 20;
+BA_ "E2EDataId" BO_ 416 18;
+BA_ "GenMsgCycleTime" BO_ 768 100;
+BA_ "E2EDataId" BO_ 768 19;
+BA_ "GenMsgSendType" BO_ 2016 "event";
+BA_ "GenMsgSendType" BO_ 2024 "event";
+VAL_ 768 TurnIndicator 0 "Off" 1 "Left" 2 "Right" 3 "Hazard" ;

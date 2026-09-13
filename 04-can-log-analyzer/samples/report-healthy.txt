@@ -1,0 +1,8 @@
+frames: 443  ids: 3  duration: 4.00 s  uds transactions: 0
+
+      id name            count   period   expect  dlc
+   0x100 ENGINE_DATA       201     20.0       20    8
+   0x1A0 ABS_DATA          201     20.0       20    8
+   0x300 BODY_STATUS        41    100.0      100    8
+
+findings: 0
